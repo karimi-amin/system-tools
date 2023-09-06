@@ -1,0 +1,156 @@
+#!/bin/bash
+
+initKeyboard() {
+  # No need to initialize the keyboard in shell script
+  return 0
+}
+
+closeKeyboard() {
+  # No need to close the keyboard in shell script
+  return 0
+}
+
+connect() {
+  wifiInterface=$(getWifiInterface)
+  if [ $? -ne 0 ]; then
+    printf "Error getting Wi-Fi interface: %s\n" "$wifiInterface"
+    return 1
+  fi
+
+  setDNS "$wifiInterface" true
+  if [ $? -ne 0 ]; then
+    printf "Error setting DNS: %s\n" "$setDNS"
+  else
+    printf "\n\033[32m.:: DNS servers set successfully ::.\033[0m\n" # Use green color for success message
+  fi
+}
+
+disconnect() {
+  wifiInterface=$(getWifiInterface)
+  if [ $? -ne 0 ]; then
+    printf "Error getting Wi-Fi interface: %s\n" "$wifiInterface"
+    return 1
+  fi
+
+  setDNS "$wifiInterface" false
+  if [ $? -ne 0 ]; then
+    printf "Error setting DNS to auto: %s\n" "$setDNS"
+  else
+    printf "\nDNS set to auto.\n"
+  fi
+}
+
+getWifiInterface() {
+  os=$(uname -s)
+  case $os in
+    Darwin)
+      printf "Wi-Fi\n"
+      ;;
+    Linux)
+      wifiInterface=$(iw dev | awk '$1=="Interface"{print $2}')
+      if [ -n "$wifiInterface" ]; then
+        printf "%s\n" "$wifiInterface"
+      else
+        printf "Wi-Fi interface not found\n"
+        return 1
+      fi
+      ;;
+    *)
+      printf "Unsupported operating system: %s\n" "$os"
+      return 1
+      ;;
+  esac
+}
+
+setDNS() {
+  wifiInterface="$1"
+  connect="$2"
+
+  os=$(uname -s)
+  case $os in
+    Darwin)
+      if [ "$connect" = true ]; then
+        networksetup -setdnsservers "$wifiInterface" 178.22.122.100 185.51.200.2
+      else
+        networksetup -setdnsservers "$wifiInterface" empty
+      fi
+      ;;
+    Linux)
+      if [ "$connect" = true ]; then
+        nmcli connection modify "$wifiInterface" ipv4.dns "178.22.122.100 185.51.200.2"
+        nmcli connection up "$wifiInterface"
+      else
+        nmcli connection modify "$wifiInterface" ipv4.dns ""
+        nmcli connection down "$wifiInterface"
+      fi
+      ;;
+    *)
+      printf "Unsupported operating system: %s\n" "$os"
+      return 1
+      ;;
+  esac
+}
+
+if [ "$1" = "1" ]; then
+  connect
+elif [ "$1" = "0" ]; then
+  disconnect
+else
+  printf "\033[1;33mDNS Changer\033[0m\n"
+  printf "Use arrow keys to choose an option:\n"
+  printf "[ ] Connect to DNS servers\n"
+  printf "[ ] Disconnect and reset DNS to auto\n"
+
+  selectedOption=0
+
+  printOptions() {
+    clear
+    printf "\033[1;33m.:: DNS Changer by Amin (Shecan version 1.0.0) ::.\033[0m\n"
+    options=("[ ] Connect to DNS servers" "[ ] Disconnect and reset DNS to auto")
+
+    # Mark the selected option with an "[X]"
+    options[$selectedOption]="[X]${options[$selectedOption]:3}"
+
+    for opt in "${options[@]}"; do
+      printf "%s\n" "$opt"
+    done
+
+    printf "\nUse arrow keys to navigate, Enter to select, and 'q' to quit.\n"
+  }
+
+  printOptions
+
+  while true; do
+    read -rsn1 input
+
+    case "$input" in
+      A) # Up arrow
+        if [ $selectedOption -gt 0 ]; then
+          selectedOption=$((selectedOption - 1))
+          printOptions
+        fi
+        ;;
+      B) # Down arrow
+        if [ $selectedOption -lt 1 ]; then
+          selectedOption=$((selectedOption + 1))
+          printOptions
+        fi
+        ;;
+      "") # Enter key
+        case $selectedOption in
+          0)
+            connect
+            ;;
+          1)
+            disconnect
+            ;;
+        esac
+        exit 0
+        ;;
+      q|Q) # 'q' or 'Q' key
+        printf "\nProgram terminated.\n"
+        exit 0
+        ;;
+    esac
+  done
+fi
