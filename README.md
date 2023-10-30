@@ -1,12 +1,23 @@
-# Single Command Install & upgrade
+# Shecan DNS Changer
 
-````
-bash <(curl -Ls https://raw.githubusercontent.com/karimi-amin/system-tools/master/install.sh)
-````
+## Description
+Shecan DNS Changer is a Bash script that allows you to easily change your DNS server settings on macOS and Linux. It can help you connect to specific DNS servers or revert to automatic DNS settings.
 
-# Connect and Disconnect
+## Table of Contents
+- [Usage](#usage)
+- [Installation](#installation)
+- [Contributing](#contributing)
+- [License](#license)
 
-````
-shecan 1        #to connect
-shecan 0        #to disconnect and set reset to auto
-````
+## Usage
+
+### Prerequisites
+- This script is intended for macOS and Linux users.
+- You should have administrative privileges to change DNS settings.
+
+### Commands
+
+#### Connect to DNS Servers
+To connect to specific DNS servers, run the following command:
+```bash
+./shecan 1
